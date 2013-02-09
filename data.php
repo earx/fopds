@@ -47,10 +47,10 @@ class Data extends Base {
     
     public function __construct($post, $book = null) {
         $this->id = $post->id;
-        $this->name = $post->name;
-        $this->format = $post->format;
-        $this->realFormat = str_replace ("ORIGINAL_", "", $post->format);
-        $this->extension = strtolower ($this->realFormat);
+        $this->name = $post->fileType;
+        $this->format = $post->fileType;
+        $this->realFormat = $post->fileType;
+        $this->extension = $post->fileType;
         $this->book = $book;
     }
     
@@ -94,8 +94,11 @@ class Data extends Base {
     public static function getLink ($book, $type, $mime, $rel, $filename, $idData, $title = NULL)
     {
         global $config;
-        
+
+        //TODO: provide link
         $textData = "";
+        return new Link ("fetch.php?id=$book->id" . $textData, $mime, $rel, $title);
+        
         if (!is_null ($idData))
         {
             $textData = "&data=" . $idData;

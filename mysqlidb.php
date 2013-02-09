@@ -67,7 +67,7 @@ class MysqliDB {
         
         if (!$link) { 
 
-            trigger_error("Cannot connect mysqli server: \n". $link->connect_error);
+            trigger_error("Cannot connect mysqli server: ". $link->connect_error);
             die; 
         }
         
@@ -87,7 +87,7 @@ class MysqliDB {
         
         if ( ! $res ) {
             
-            trigger_error ("Error in the query:". $this->db->error);
+            trigger_error ("Error in the query: ". $this->db->error);
             die;
         }
         
@@ -106,10 +106,7 @@ class MysqliDB {
         
         if ( ! $res ) {
             
-            echo 'cannot prepare query:'.$query;
-            
-            var_dump($this->db);
-            trigger_error ('cannot prepare query:'.$query);
+            trigger_error ('cannot prepare query: '.$query);
             die;
         }
         
@@ -145,8 +142,8 @@ class MysqliDB {
             array_push ($params, ($n - 1) * $config['cops_max_item_per_page'], $config['cops_max_item_per_page']);
         }
         
-        
-        $prep_query = $this->db->prepare(str_format ($query, $columns, $filter));
+        $final_query = str_format ($query, $columns, $filter);
+        $prep_query = $this->db->prepare($final_query);
 
         if ( ! $prep_query ) {
             
@@ -162,7 +159,7 @@ class MysqliDB {
         //execute
         if ( ! $prep_query->execute () ) {
             
-            trigger_error("Cannot execute query");
+            trigger_error("Cannot execute query: executeQuery:162");
             die; 
         }
         

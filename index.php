@@ -16,8 +16,11 @@
     require_once ("customcolumn.php");
     require_once ("book.php");
     
-   header ("Content-Type:application/xhtml+xml");
-	//header('content-type text/html charset=utf-8');	
+	if (isset($_GET['texthtml']))
+		header('content-type text/html charset=utf-8');
+	else
+		header ("Content-Type:application/xhtml+xml");
+		
     $page = getURLParam ("page", Base::PAGE_INDEX);
     $query = getURLParam ("query");
     $qid = getURLParam ("id");
@@ -26,6 +29,8 @@
     $currentPage = Page::getPage ($page, $qid, $query, $n);
     $currentPage->InitializeContent (); 
 
+	//var_dump($currentPage);
+	
 /* Test to see if pages are opened on an Eink screen 
  * First test Kindle or Kobo Touch */
 

@@ -16,15 +16,22 @@ require_once('php-epub-meta/epub.php');
 
 // Silly thing because PHP forbid string concatenation in class const
 
-define ('SQL_BOOKS_LEFT_JOIN', "left outer join librate on librate.BookId = libbook.BookId");
+define ('SQL_BOOK_COLUMNS',
+        "libbook.BookID as id, libbook.title as title, time, year, keywords, librate.Rate, lang, fileType, fileSize"
+        .",libbook.md5 as uuid"
+        .",GenreCode, GenreDesc, GenreMeta, SeqName "
+        );
+        
+define ('SQL_BOOKS_LEFT_JOIN',
+            "LEFT OUTER JOIN librate ON librate.BookId = libbook.BookId"
+            ." LEFT JOIN libgenre ON libbook.BookId = libgenre.BookId"
+            ." LEFT JOIN libgenrelist ON libgenrelist.GenreId = libgenre.GenreId"
+            ." LEFT JOIN libseq ON libbook.BookId = libseq.BookId"
+            ." LEFT JOIN libseqname ON libseqname.SeqId = libseq.SeqId"
+        );
 
-//define ('SQL_BOOKS_LEFT_JOIN', "left outer join comments on comments.book = libbook.id 
-//                                left outer join libbook_ratings_link on libbook_ratings_link.book = libbook.id 
-//                                left outer join ratings on libbook_ratings_link.rating = ratings.id ");
 define ('SQL_BOOKS_BY_FIRST_LETTER', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where upper (books.sort) like ? order by libbook.sort");
-define ('SQL_BOOKS_BY_AUTHOR', "select {0} from libavtorname, libavtor, libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where libavtor.bookID = libbook.bookID and author = ? {1} order by libbook.year"); //TODO: exlude deleted?
 define ('SQL_BOOKS_BY_SERIE', "select {0} from libbook_series_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where libbook_series_link.book = libbook.id and series = ? {1} order by series_index");
 define ('SQL_BOOKS_BY_TAG', "select {0} from libbook_tags_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
@@ -40,11 +47,10 @@ class Book extends Base {
     const ALL_BOOKS_UUID = "urn:uuid";
     const ALL_BOOKS_ID = "calibre:books";
     const ALL_RECENT_BOOKS_ID = "calibre:recentbooks";
-    const BOOK_COLUMNS = "libbook.BookID as id, libbook.title as title, time, year, keywords, librate.Rate";
+    const BOOK_COLUMNS = SQL_BOOK_COLUMNS;
     
     const SQL_BOOKS_LEFT_JOIN = SQL_BOOKS_LEFT_JOIN;
     const SQL_BOOKS_BY_FIRST_LETTER = SQL_BOOKS_BY_FIRST_LETTER;
-    const SQL_BOOKS_BY_AUTHOR = SQL_BOOKS_BY_AUTHOR;
     const SQL_BOOKS_BY_SERIE = SQL_BOOKS_BY_SERIE;
     const SQL_BOOKS_BY_TAG = SQL_BOOKS_BY_TAG;
     const SQL_BOOKS_BY_CUSTOM = SQL_BOOKS_BY_CUSTOM;
@@ -53,8 +59,8 @@ class Book extends Base {
     
     public $id;
     public $title;
-    public $timestamp;
-    public $pubdate;
+    public $time;
+    public $year;
     public $path;
     public $uuid;
     public $hasCover;
@@ -65,30 +71,55 @@ class Book extends Base {
     public $datas = NULL;
     public $authors = NULL;
     public $serie = NULL;
-    public $tags = NULL;
-    public $format = array ();
+    public $keywords = NULL;
+    public $format = array();
+    public $lang;
+    public $fileType;
+    public $fileSize; 
+    public $genrecode;
+    public $genredesc;
+    public $genremeta;
+    public $seqname;
 
     
     public function __construct($line) {
         global $config;
         $this->id = $line->id;
         $this->title = $line->title;
-        $this->timestamp = strtotime ($line->timestamp);
-        $this->pubdate = strtotime ($line->pubdate);
-        $this->path = $config['calibre_directory'] . $line->path;
-        $this->relativePath = $line->path;
-        $this->seriesIndex = $line->series_index;
-        $this->comment = $line->comment;
+        $this->lang = $line->lang;
+        $this->keywords = $line->keywords;
+        $this->filetype = $line->fileType;
+        $this->fileSize = $line->fileSize;
+
+        $this->time = strtotime ($line->time);
+        $this->year = strtotime ($line->year);
+
+        $this->hasCover = 0;
+        
+        $this->genrecode=$line->GenreCode;
+        $this->genredesc=$line->GenreDesc;
+        $this->genremeta=$line->GenreMeta;
+        $this->seqname=$line->SeqName;        
+        $this->rating = $line->Rate;
+
         $this->uuid = $line->uuid;
-        $this->hasCover = $line->has_cover;
-        if (!file_exists ($this->getFilePath ("jpg"))) {
-            // double check
-            $this->hasCover = 0;
-        }
-        $this->rating = $line->rating;
+        
+        //TODO: construct path
+        //$this->path = $config['calibre_directory'] . $line->path;
+        ///$this->relativePath = $line->path;
+        //
+        //$this->seriesIndex = $line->series_index;
+        //$this->comment = $line->comment;
+        //$this->hasCover = $line->has_cover;
+        //if (!file_exists ($this->getFilePath ("jpg"))) {
+        //    // double check
+        //    $this->hasCover = 0;
+        //}
+        
     }
         
     public function getEntryId () {
+        
         return self::ALL_BOOKS_UUID.":".$this->uuid;
     }
     
@@ -110,6 +141,7 @@ class Book extends Base {
     }
     
     public function getTitle () {
+        
         return $this->title;
     }
     
@@ -158,58 +190,24 @@ class Book extends Base {
     }
     
     public function getSerie () {
-        if (is_null ($this->serie)) {
-            $this->serie = Serie::getSerieByBookId ($this->id);
-        }
-        return $this->serie;
+        
+        return $this->seqname;
     }
     
     public function getLanguages () {
-        $lang = array ();
-        $result = parent::getDb ()->prepare('select languages.lang_code
-                from libbook_languages_link, languages
-                where libbook_languages_link.lang_code = languages.id
-                and book = ?
-                order by item_order');
-        $result->execute (array ($this->id));
-        while ($post = $result->fetchObject ())
-        {
-            array_push ($lang, $post->lang_code);
-        }
-        return implode (", ", $lang);
+
+        return $this->lang;
     }
     
     public function getTags () {
-        if (is_null ($this->tags)) {
-            $this->tags = array ();
-            
-            $result = parent::getDb ()->prepare('select tags.id as id, name
-                from libbook_tags_link, tags
-                where tag = tags.id
-                and book = ?
-                order by name');
-            $result->execute (array ($this->id));
-            while ($post = $result->fetchObject ())
-            {
-                array_push ($this->tags, new Tag ($post->id, $post->name));
-            }
-        }
-        return $this->tags;
+
+        return $this->keywords;
     }
     
     public function getDatas ()
     {
         if (is_null ($this->datas)) {
-            $this->datas = array ();
-        
-            $result = parent::getDb ()->prepare('select id, format, name
-    from data where book = ?');
-            $result->execute (array ($this->id));
-            
-            while ($post = $result->fetchObject ())
-            {
-                array_push ($this->datas, new Data ($post, $this));
-            }
+            $this->datas = new Data ($this, $this);
         }
         return $this->datas;
     }
@@ -254,19 +252,8 @@ class Book extends Base {
     }
     
     public function getComment ($withSerie = true) {
-        $addition = "";
-        $se = $this->getSerie ();
-        if (!is_null ($se) && $withSerie) {
-            $addition = $addition . "<strong>" . localize("content.series") . "</strong>" . str_format (localize ("content.series.data"), $this->seriesIndex, htmlspecialchars ($se->name)) . "<br />\n";
-        }
-        if (preg_match ("/<\/(div|p|a)>/", $this->comment))
-        {
-            return $addition . preg_replace ("/<(br|hr)>/", "<$1 />", $this->comment);
-        }
-        else
-        {
-            return $addition . htmlspecialchars ($this->comment);
-        }
+        
+        return ''; //flibusta doesnt trade comments
     }
     
     public function getDataFormat ($format) {
@@ -338,45 +325,52 @@ class Book extends Base {
         global $config;
         $linkArray = array();
         
-        if ($this->hasCover)
-        {
-            array_push ($linkArray, Data::getLink ($this, "jpg", "image/jpeg", Link::OPDS_IMAGE_TYPE, "cover.jpg", NULL));
-            $height = "50";
-            if (preg_match ('/feed.php/', $_SERVER["SCRIPT_NAME"])) {
-                $height = $config['cops_opds_thumbnail_height'];
-            }
-            else
-            {
-                $height = $config['cops_html_thumbnail_height'];
-            }
-            array_push ($linkArray, new Link ("fetch.php?id=$this->id&height=" . $height, "image/jpeg", Link::OPDS_THUMBNAIL_TYPE));
-        }
+        //TODO: covers
+        //if ($this->hasCover)
+        //{
+        //    array_push ($linkArray, Data::getLink ($this, "jpg", "image/jpeg", Link::OPDS_IMAGE_TYPE, "cover.jpg", NULL));
+        //    $height = "50";
+        //    if (preg_match ('/feed.php/', $_SERVER["SCRIPT_NAME"])) {
+        //        $height = $config['cops_opds_thumbnail_height'];
+        //    }
+        //    else
+        //    {
+        //        $height = $config['cops_html_thumbnail_height'];
+        //    }
+        //    array_push ($linkArray, new Link ("fetch.php?id=$this->id&height=" . $height, "image/jpeg", Link::OPDS_THUMBNAIL_TYPE));
+        //}
         
         foreach ($this->getDatas () as $data)
         {
-            if ($data->isKnownType ())
+            if ($data->isKnownType())
             {
                 array_push ($linkArray, $data->getDataLink (Link::OPDS_ACQUISITION_TYPE, "Download"));
             }
         }
                 
-        foreach ($this->getAuthors () as $author) {
-            array_push ($linkArray, new LinkNavigation ($author->getUri (), "related", str_format (localize ("bookentry.author"), localize ("splitByLetter.book.other"), $author->name)));
-        }
-        
-        $serie = $this->getSerie ();
-        if (!is_null ($serie)) {
-            array_push ($linkArray, new LinkNavigation ($serie->getUri (), "related", str_format (localize ("content.series.data"), $this->seriesIndex, $serie->name)));
-        }
+        //foreach ($this->getAuthors () as $author) {
+        //    array_push ($linkArray, new LinkNavigation ($author->getUri (), "related", str_format (localize ("bookentry.author"), localize ("splitByLetter.book.other"), $author->name)));
+        //}
+        //
+        //$serie = $this->getSerie ();
+        //if (!is_null ($serie)) {
+        //    array_push ($linkArray, new LinkNavigation ($serie->getUri (), "related", str_format (localize ("content.series.data"), $this->seriesIndex, $serie->name)));
+        //}
         
         return $linkArray;
     }
 
     
-    public function getEntry () {    
-        return new EntryBook ($this->getTitle (), $this->getEntryId (), 
-            $this->getComment (), "text/html", 
-            $this->getLinkArray (), $this);
+    public function getEntry () {
+        
+        return new EntryBook (
+            $this->getTitle(),
+            $this->getEntryId(),
+            $this->getComment(),
+            "text/html", 
+            $this->getLinkArray(),
+            $this
+        );
     }
 
     public static function getCount() {
@@ -397,7 +391,16 @@ class Book extends Base {
     }
         
     public static function getBooksByAuthor($authorId, $n) {
-        return self::getEntryArray (self::SQL_BOOKS_BY_AUTHOR, array ($authorId), $n);
+
+        $SQL_BOOKS_BY_AUTHOR ="SELECT {0} FROM libavtor, libbook "
+            . SQL_BOOKS_LEFT_JOIN 
+            ." WHERE libavtor.bookID = libbook.bookID"
+                ." AND libavtor.AvtorId = ? {1}"
+            ." ORDER BY libbook.Year"
+            ;
+            //TODO: exlude deleted?
+        
+        return self::getEntryArray ($SQL_BOOKS_BY_AUTHOR, array ($authorId), $n);
     }
 
     
@@ -465,13 +468,26 @@ where data.book = libbook.id and data.id = ?');
     }
     
     public static function getEntryArray ($query, $params, $n) {
-        list ($totalNumber, $result) = parent::executeQuery ($query, self::BOOK_COLUMNS, self::getFilterString(), $params, $n);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, self::BOOK_COLUMNS, self::getFilterString(), $params, $n);
+        
         $entryArray = array();
-        while ($post = $result->fetchObject ())
+        $post = array();
+        
+        //will work only with native MYSQLI driver!
+        //@link http://www.php.net/manual/en/mysqli-stmt.get-result.php
+        $result = $stmt->get_result();
+        
+        while ($post = $result->fetch_object())
         {
+
             $book = new Book ($post);
             array_push ($entryArray, $book->getEntry ());
         }
+
+        $result->close();
+        
+        var_dump($entryArray, $totalNumber);
         return array ($entryArray, $totalNumber);
     }
 

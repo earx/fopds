@@ -107,9 +107,25 @@ class Author extends Base {
     }
         
     public static function getAuthorById ($authorId) {
-        $result = parent::getDb ()->prepare('select sort from authors where id = ?');
-        $result->execute (array ($authorId));
-        return new Author ($authorId, $result->fetchColumn ());
+        
+        $query = "SELECT CONCAT(FirstName,' ',MiddleName,' ',LastName) as author FROM libavtorname WHERE AvtorId = ?";
+
+        $prep_query = parent::getDb()->prepare($query);
+        $prep_query->bind_param('i', $authorId);
+
+        //execute
+        if ( ! $prep_query->execute () ) {
+            
+            trigger_error("Cannot execute query");
+            die; 
+        }
+
+        $prep_query->bind_result($data);
+        $prep_query->fetch();
+        
+        $prep_query->close();
+        
+        return new Author ($authorId, $data );
     }
     
     public static function getAuthorByBookId ($bookId) {
