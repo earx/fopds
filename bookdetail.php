@@ -14,9 +14,11 @@ $book = Book::getBookById($_GET["id"]);
 $authors = $book->getAuthors();
 $translators= $book->getTranslators();
 
-$tags = $book->getTags ();
-$serie = $book->getSerie ();
-$book->getLinkArray ();
+$tags = $book->getTags();
+$serie = $book->getSerie();
+$genres = $book->getGenres();
+$reviews= $book->getReviews();
+$book->getLinkArray();
  
 ?>
 <div class="bookpopup">
@@ -97,12 +99,13 @@ $book->getLinkArray ();
         </div>
 <?php endif;  ?>
 
-<?php if (!is_null ($serie)): ?>
+<?php if (!is_null ($genres)): ?>
         <div class="entrySection">
             <div class="buttonEffect pad6">
-                <a href="index.php<?php echo str_replace ("&", "&amp;", $serie->getUri ()) ?>"><?php echo localize("series.title") ?></a>
+                <a href="index.php<?php echo str_replace ("&", "&amp;", $serie->getUri ()) ?>"><?php echo localize("genresword.title") ?></a>
             </div>
-            <?php echo str_format (localize ("content.series.data"), $book->seriesIndex, htmlspecialchars ($serie->name)) ?>
+            TODO
+            <?php //echo str_format (localize ("content.genres.data"), $book->GenresIndex, htmlspecialchars ($serie->name)) ?>
         </div>
 <?php endif;  ?>
 
@@ -115,5 +118,16 @@ $book->getLinkArray ();
     <hr />
     <div><?php echo localize("content.summary") ?></div>
     <div class="content" style="max-width:700px;"><?php echo $book->getComment (false) ?></div>
+
+<?php if (!is_null ($reviews)): ?>
+        <div class="entrySection">
+            <div class="buttonEffect pad6">
+                <a href="index.php<?php //echo str_replace ("&", "&amp;", $serie->getUri ()) ?>"><?php //echo localize("genresword.title") ?></a>
+            </div>
+            TODO: user comments - libreviews
+            <?php //echo str_format (localize ("content.genres.data"), $book->GenresIndex, htmlspecialchars ($serie->name)) ?>
+        </div>
+<?php endif;  ?>
+
     <hr />
 </div>

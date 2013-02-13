@@ -19,16 +19,18 @@ require_once('php-epub-meta/epub.php');
 define ('SQL_BOOK_COLUMNS',
         "libbook.BookID as id, libbook.title as title, time, year, keywords, librate.Rate, lang, fileType, fileSize"
         .",libbook.md5 as uuid"
-        .",GenreCode, GenreDesc, GenreMeta, SeqName "
+        //.",GenreCode, GenreDesc, GenreMeta, "
+        //.",SeqName "
         );
         
 //TODO: bug: some books are repeated twice in list
+//example: http://test.lo/opds/cops/index.php?page=7&id=19416
 define ('SQL_BOOKS_LEFT_JOIN',
             "LEFT OUTER JOIN librate ON librate.BookId = libbook.BookId"
-            ." LEFT OUTER JOIN libgenre ON libbook.BookId = libgenre.BookId"
-            ." LEFT JOIN libgenrelist ON libgenrelist.GenreId = libgenre.GenreId"
-            ." LEFT JOIN libseq ON libbook.BookId = libseq.BookId"
-            ." LEFT JOIN libseqname ON libseqname.SeqId = libseq.SeqId"
+            //." LEFT OUTER JOIN libgenre ON libbook.BookId = libgenre.BookId"
+            //." LEFT JOIN libgenrelist ON libgenrelist.GenreId = libgenre.GenreId"
+            //." LEFT JOIN libseq ON libbook.BookId = libseq.BookId"
+            //." LEFT JOIN libseqname ON libseqname.SeqId = libseq.SeqId"
         );
 
 define ('SQL_BOOKS_BY_FIRST_LETTER', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
@@ -78,9 +80,7 @@ class Book extends Base {
     public $lang;
     public $fileType;
     public $fileSize; 
-    public $genrecode;
-    public $genredesc;
-    public $genremeta;
+    public $genres;
     public $seqname;
 
     
@@ -100,10 +100,7 @@ class Book extends Base {
 
         $this->hasCover = 0;
         
-        $this->genrecode=$line->GenreCode;
-        $this->genredesc=$line->GenreDesc;
-        $this->genremeta=$line->GenreMeta;
-        $this->seqname=$line->SeqName;        
+        //$this->seqname=$line->SeqName;        
         $this->rating = $line->Rate;
 
         $this->uuid = $line->uuid;
@@ -220,6 +217,17 @@ class Book extends Base {
         }
         return $authorList;
     
+    }
+    
+
+    public function getReviews() {
+        
+        return 'TODO';
+    }
+    
+    public function getGenres() {
+        
+        return 'TODO';
     }
     
     public function getSerie() {
@@ -454,6 +462,7 @@ class Book extends Base {
         
         $SQL_BOOKS_BY_SERIE = "SELECT {0} FROM libbook "
             . SQL_BOOKS_LEFT_JOIN
+            ." LEFT JOIN libseq ON libbook.BookId = libseq.BookId"
             ." WHERE libseq.SeqId = ? {1} "
             ." ORDER BY libbook.title"
             ;

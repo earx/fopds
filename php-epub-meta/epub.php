@@ -277,6 +277,24 @@ class EPub {
     public function SerieIndex($serieIndex=false){
         return $this->getset('opf:meta',$serieIndex,'name','calibre:series_index','content');
     }
+
+    /**
+     * Set or get the Serie of the book
+     *
+     * @param string $serie
+     */
+    public function Genre($serie=false){
+        return $this->getset('opf:meta',$serie,'name','calibre:genres','content');
+    }
+    
+    /**
+     * Set or get the Serie Index of the book
+     *
+     * @param string $serieIndex
+     */
+    public function GenreIndex($serieIndex=false){
+        return $this->getset('opf:meta',$serieIndex,'name','calibre:genres_index','content');
+    }
     
     /**
      * Set or get the book's subjects (aka. tags)

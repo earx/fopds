@@ -546,6 +546,12 @@ abstract class Base
     const PAGE_CUSTOM_DETAIL = "15";
     const PAGE_SERIES_FIRST_LETTER = "16";
 
+    //TODO
+    const PAGE_GENRE_DETAIL = "17";
+    const PAGE_GENRE_FIRST_LETTER = "18";
+    const PAGE_ALL_GENRES = "19";
+    
+
     const COMPATIBILITY_XML_ALDIKO = "aldiko";
     
     private static $db = NULL;
