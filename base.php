@@ -6,6 +6,8 @@
  * @author     Sébastien Lucas <sebastien@slucas.fr>
  */
 
+require_once ("mysqlidb.php");
+
 define ("VERSION", "0.3.1");
 date_default_timezone_set($config['default_timezone']);
  

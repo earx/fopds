@@ -250,6 +250,7 @@
                 <div class="entryContent"><?php echo localize("tags.title") . " : " . htmlspecialchars ($entry->book->getTagsName ()) ?></div>
             <?php
                 $serie = $entry->book->getSerie ();
+
                 if (!is_null ($serie)) {
             ?>
                 <div class="entryContent ss"><?php echo localize("series.title") . " : " . htmlspecialchars ($serie->name) . " (" . $entry->book->seriesIndex . ")" ?></div>

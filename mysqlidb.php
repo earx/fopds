@@ -118,10 +118,11 @@ class MysqliDB {
      *     Prepare and execute query
      *     @param string $query SQL
      *     @param string $columns - columns list
-     *     @param string $fileter
+     *     @param string $filter
+     *     @param array $params
      *     @param int $n
      */
-    public function executeQuery($query, $columns, $filter, $params, $n) {
+    public function executeQuery($query, $columns = '', $filter='', $params = array(), $n = -1) {
         
         global $config;
         $totalResult = -1;
@@ -164,6 +165,7 @@ class MysqliDB {
         }
         
         return array ($totalResult, $prep_query);
-    }    
+    }
+
 }
 ?>

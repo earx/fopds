@@ -8,6 +8,12 @@
 
 require_once('base.php');
 
+define(
+        'AUTHORS_SQL',
+        "SELECT a.AvtorId AS id, CONCAT(n.FirstName,' ',n.MiddleName,' ',n.LastName) AS sort, CONCAT(n.FirstName,' ',n.MiddleName,' ',n.LastName) AS name "
+        ." FROM libavtorname n"
+    );
+
 class Author extends Base {
     const ALL_AUTHORS_ID = "calibre:authors";    
     const SQL_ALL_AUTHORS = "select {0} from authors, books_authors_link where author = authors.id group by authors.id, authors.name, authors.sort order by sort";
@@ -52,9 +58,8 @@ class Author extends Base {
         
         $result = parent::getDb()->query($query);
         $entryArray = array();
-        while ($post = $result->fetchObject ())
+        while ( $post = $result->fetchObject () )
         {
-            
             array_push ($entryArray, new Entry ($post->title, Author::getEntryIdByLetter ($post->title), 
                 str_format (localize("authorword", $post->count), $post->count), "text", 
                 array ( new LinkNavigation ("?page=".parent::PAGE_AUTHORS_FIRST_LETTER."&id=". rawurlencode ($post->title)))));
@@ -107,9 +112,12 @@ class Author extends Base {
     }
         
     public static function getAuthorById ($authorId) {
-        
-        $query = "SELECT CONCAT(FirstName,' ',MiddleName,' ',LastName) as author FROM libavtorname WHERE AvtorId = ?";
 
+        $query = AUTHORS_SQL
+            ." JOIN libavtor a ON a.AvtorId = n.AvtorId"
+            ." WHERE a.AvtorId = ?"
+            ;
+        
         $prep_query = parent::getDb()->prepare($query);
         $prep_query->bind_param('i', $authorId);
 
@@ -129,16 +137,50 @@ class Author extends Base {
     }
     
     public static function getAuthorByBookId ($bookId) {
-        $result = parent::getDb ()->prepare('select authors.id as id, authors.sort as sort
-from authors, books_authors_link
-where author = authors.id
-and book = ?');
-        $result->execute (array ($bookId));
-        $authorArray = array ();
-        while ($post = $result->fetchObject ()) {
-            array_push ($authorArray, new Author ($post->id, $post->sort));
+        
+        $query = AUTHORS_SQL
+            ." JOIN libavtor a ON a.AvtorId = n.AvtorId"
+            ." WHERE a.BookId = ?"
+            ;
+            
+        $params = array ($bookId);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
+            
+        $result = $stmt->get_result();
+        
+        if ($post = $result->fetch_object())
+        {
+            return array( new Author ($post->id, $post->sort) );
         }
-        return $authorArray;
+        
+        return NULL;
+
     }
+    
+    //TODO: show author details
+    public static function getAuthorAnnotations ($AuthorId) {
+        
+        $query = "SELECT * "
+            ." FROM libaannotations a"
+            ." WHERE a.AvtorId = ?"
+            ;
+            
+        $params = array ($AvtorId);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
+            
+        $result = $stmt->get_result();
+        
+        $annotations = array();
+        
+        while ($post = $result->fetch_object())
+        {
+            $annotations[] = $post;
+        }
+        
+        return $annotations;
+
+    }    
 }
 ?>

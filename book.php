@@ -33,13 +33,13 @@ define ('SQL_BOOKS_LEFT_JOIN',
 define ('SQL_BOOKS_BY_FIRST_LETTER', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where upper (books.sort) like ? order by libbook.sort");
 define ('SQL_BOOKS_BY_SERIE', "select {0} from libbook_series_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where libbook_series_link.book = libbook.id and series = ? {1} order by series_index");
+                                                    where libbook_series_link.book = libbook.BookId and series = ? {1} order by series_index");
 define ('SQL_BOOKS_BY_TAG', "select {0} from libbook_tags_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where libbook_tags_link.book = libbook.id and tag = ? {1} order by sort");
+                                                    where libbook_tags_link.book = libbook.BookId and tag = ? {1} order by sort");
 define ('SQL_BOOKS_BY_CUSTOM', "select {0} from {2}, libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where {2}.book = libbook.id and {2}.{3} = ? {1} order by sort");
+                                                    where {2}.book = libbook.BookId and {2}.{3} = ? {1} order by sort");
 define ('SQL_BOOKS_QUERY', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where (exists (select null from authors, libbook_authors_link where book = libbook.id and author = authors.id and authors.name like ?) or title like ?) {1} order by libbook.sort");
+                                                    where (exists (select null from authors, libbook_authors_link where book = libbook.BookId and author = authors.id and authors.name like ?) or title like ?) {1} order by libbook.sort");
 define ('SQL_BOOKS_RECENT', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where 1=1 {1} order by timestamp desc limit ");
 
@@ -60,13 +60,15 @@ class Book extends Base {
     public $id;
     public $title;
     public $time;
+    public $timestamp;
     public $year;
+    public $pubdate;
     public $path;
     public $uuid;
     public $hasCover;
     public $relativePath;
     public $seriesIndex;
-    public $comment;
+    public $comments;
     public $rating;
     public $datas = NULL;
     public $authors = NULL;
@@ -92,7 +94,9 @@ class Book extends Base {
         $this->fileSize = $line->fileSize;
 
         $this->time = strtotime ($line->time);
+        $this->timestamp = strtotime ($line->time);
         $this->year = strtotime ($line->year);
+        $this->pubdate = strtotime ($line->year);
 
         $this->hasCover = 0;
         
@@ -146,6 +150,7 @@ class Book extends Base {
     }
     
     public function getAuthors () {
+        
         if (is_null ($this->authors)) {
             $this->authors = Author::getAuthorByBookId ($this->id);
         }
@@ -166,7 +171,7 @@ class Book extends Base {
             $filter = $matches[1];    
         }
         
-        $result = "exists (select null from libbook_tags_link, tags where libbook_tags_link.book = libbook.id and libbook_tags_link.tag = tags.id and tags.name = '" . $filter . "')";
+        $result = "exists (select null from libbook_tags_link, tags where libbook_tags_link.book = libbook.BookId and libbook_tags_link.tag = tags.id and tags.name = '" . $filter . "')";
         
         if (!$exists) {
             $result = "not " . $result;
@@ -191,7 +196,11 @@ class Book extends Base {
     
     public function getSerie () {
         
-        return $this->seqname;
+        if (is_null ($this->serie)) {
+            $this->serie = Serie::getSerieByBookId ($this->id);
+        }
+        return $this->serie;
+        
     }
     
     public function getLanguages () {
@@ -207,7 +216,7 @@ class Book extends Base {
     public function getDatas ()
     {
         if (is_null ($this->datas)) {
-            $this->datas = new Data ($this, $this);
+            $this->datas = array( new Data ($this, $this) );
         }
         return $this->datas;
     }
@@ -253,7 +262,14 @@ class Book extends Base {
     
     public function getComment ($withSerie = true) {
         
-        return ''; //flibusta doesnt trade comments
+        if ( ! $this->comments ) {
+            
+            $comments = $this->getBookAnnotations($this->id);
+            
+            $this->comments = implode('<br />', $comments);
+        }
+        
+        return $this->comments; 
     }
     
     public function getDataFormat ($format) {
@@ -340,7 +356,9 @@ class Book extends Base {
         //    array_push ($linkArray, new Link ("fetch.php?id=$this->id&height=" . $height, "image/jpeg", Link::OPDS_THUMBNAIL_TYPE));
         //}
         
-        foreach ($this->getDatas () as $data)
+        $res = $this->getDatas();
+        
+        foreach ($res as $data)
         {
             if ($data->isKnownType())
             {
@@ -418,22 +436,31 @@ class Book extends Base {
     }
     
     public static function getBookById($bookId) {
-        $result = parent::getDb ()->prepare('select ' . self::BOOK_COLUMNS . '
-from libbook ' . self::SQL_BOOKS_LEFT_JOIN . '
-where libbook.id = ?');
-        $result->execute (array ($bookId));
-        while ($post = $result->fetchObject ())
-        {
-            $book = new Book ($post);
-            return $book;
-        }
-        return NULL;
+        
+        $query = 'SELECT ' . self::BOOK_COLUMNS
+            ." FROM libbook "
+            . self::SQL_BOOKS_LEFT_JOIN
+            ." WHERE libbook.BookId = ?"
+            ;
+
+        $params = array ($bookId);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
+            
+        $result = $stmt->get_result();
+        $post = $result->fetch_object();
+        
+        if ($post)
+            return new Book($post);
+        else
+            return NULL;
+
     }
     
     public static function getBookByDataId($dataId) {
         $result = parent::getDb ()->prepare('select ' . self::BOOK_COLUMNS . ', data.name, data.format
 from data, libbook ' . self::SQL_BOOKS_LEFT_JOIN . '
-where data.book = libbook.id and data.id = ?');
+where data.book = libbook.BookId and data.id = ?');
         $result->execute (array ($dataId));
         while ($post = $result->fetchObject ())
         {
@@ -487,7 +514,7 @@ where data.book = libbook.id and data.id = ?');
 
         $result->close();
         
-        var_dump($entryArray, $totalNumber);
+        //var_dump($entryArray, $totalNumber);
         return array ($entryArray, $totalNumber);
     }
 
@@ -498,5 +525,30 @@ where data.book = libbook.id and data.id = ?');
         return $entryArray;
     }
 
+    public static function getBookAnnotations($BookId) {
+        
+        $query = "SELECT DISTINCT body "
+            ." FROM libbannotations a"
+            ." WHERE a.BookId = ?"
+            ;
+            
+        $params = array ($BookId);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
+            
+        $result = $stmt->get_result();
+        
+        $annotations = array();
+        
+        while ($post = $result->fetch_row())
+        {
+            //fix flubusta html bug:
+            $annotations[] = str_replace("<p class=book>", "<p class='book'>", $post[0] );
+        }
+        
+        return $annotations;
+
+    }    
+    
 }
 ?>

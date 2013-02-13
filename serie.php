@@ -38,31 +38,62 @@ class Serie extends Base {
     }
     
     public static function getSerieByBookId ($bookId) {
-        $result = parent::getDb ()->prepare('select  series.id as id, name
-from books_series_link, series
-where series.id = series and book = ?');
-        $result->execute (array ($bookId));
-        if ($post = $result->fetchObject ()) {
+        
+        $query = "SELECT a.SeqId AS id, SeqName AS name"
+            ." FROM libseq a, libseqname n"
+            ." WHERE a.BookId = ?"
+            ." AND a.SeqId = n.SeqId"
+            ;
+            
+        $params = array ($bookId);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
+            
+        $result = $stmt->get_result();
+        $post = $result->fetch_object();
+        
+        if ($post)
             return new Serie ($post->id, $post->name);
-        }
-        return NULL;
+        else
+            return NULL;
     }
     
     public static function getSerieById ($serieId) {
-        $result = parent::getDb ()->prepare('select id, name  from series where id = ?');
-        $result->execute (array ($serieId));
-        if ($post = $result->fetchObject ()) {
+        
+        $query = 'SELECT SeqId AS id, SeqName AS name'
+            ." FROM libseqname "
+            ." WHERE SeqId = ?"
+            ;
+
+        $params = array ($serieId);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
+            
+        $result = $stmt->get_result();
+        $post = $result->fetch_object();
+        
+        if ($post)
             return new Serie ($post->id, $post->name);
-        }
-        return NULL;
+        else
+            return NULL;
+
     }
     
+    //TODO
     public static function getAllSeries() {
-        $result = parent::getDb ()->query('select series.id as id, series.name as name, series.sort as sort, count(*) as count
-from series, books_series_link
-where series.id = series
-group by series.id, series.name, series.sort
-order by series.sort');
+        
+        $query = 'SELECT SeqId AS id, SeqName AS name'
+            ." FROM libseqname "
+            ." WHERE SeqId = ?"
+            ;
+
+        $params = array ($serieId);
+        
+        list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
+            
+        $result = $stmt->get_result();
+        $post = $result->fetch_object();
+
         $entryArray = array();
         while ($post = $result->fetchObject ())
         {
@@ -72,6 +103,14 @@ order by series.sort');
                 array ( new LinkNavigation ($serie->getUri ()))));
         }
         return $entryArray;
+    
+        
+//        $result = parent::getDb ()->query('select series.id as id, series.name as name, series.sort as sort, count(*) as count
+//from series, books_series_link
+//where series.id = series
+//group by series.id, series.name, series.sort
+//order by series.sort');
+
     }
 }
 ?>
