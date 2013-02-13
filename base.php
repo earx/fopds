@@ -288,7 +288,7 @@ class Page
         array_push ($this->entryArray, Author::getCount());
         array_push ($this->entryArray, Serie::getCount());
         
-        array_push ($this->entryArray, Tag::getCount()); //TODO: support keywords
+        //array_push ($this->entryArray, Tag::getCount()); //TODO: support keywords
         foreach ($config['cops_calibre_custom_column'] as $lookup) {
             $customId = CustomColumn::getCustomId ($lookup);
             if (!is_null ($customId)) {
@@ -478,7 +478,16 @@ class PageAllBooks extends Page
     public function InitializeContent () 
     {
         $this->title = localize ("allbooks.title");
-        $this->entryArray = Book::getAllBooks ();
+
+        global $config;
+        
+        if ($config['cops_books_split_first_letter'] == 1) {
+            $this->entryArray = Book::PageAllBooksLetter();
+        }
+        else {
+            $this->entryArray = Book::getAllBooks();
+        }
+        
         $this->idPage = Book::ALL_BOOKS_ID;
     }
 }

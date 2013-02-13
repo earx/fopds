@@ -119,6 +119,13 @@
      * 1 : Yes
      * 0 : No
      */
+    $config['cops_books_split_first_letter'] = "1";  
+    
+    /*
+     * split authors by first letter
+     * 1 : Yes
+     * 0 : No
+     */
     $config['cops_author_split_first_letter'] = "1";  
 
     /*

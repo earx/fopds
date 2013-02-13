@@ -594,6 +594,27 @@ where data.book = libbook.BookId and data.id = ?');
         
         return $annotations;
 
+    }
+    
+    public static function getAllBooksByFirstLetter() {
+        
+        $query ='SELECT SUBSTRING(UPPER(title), 1, 1) as title, count(*) as count'
+                .' FROM libbook'
+                .' GROUP BY SUBSTRING(UPPER(title), 1, 1)'
+                .' ORDER BY SUBSTRING(UPPER(title), 1, 1)'
+                ;
+        
+        $result = parent::getDb()->query($query);
+        $entryArray = array();
+        while ( $post = $result->fetchObject () )
+        {
+            array_push ($entryArray, new Entry ($post->title, self::getEntryIdByLetter ($post->title), 
+                str_format (localize("bookword", $post->count), $post->count), "text", 
+                array ( new LinkNavigation ("?page=".parent::PAGE_SERIES_FIRST_LETTER."&id=". rawurlencode ($post->title)))));
+        }
+        
+        
+        return $entryArray;
     }    
     
 }
