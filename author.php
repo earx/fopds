@@ -10,7 +10,7 @@ require_once('base.php');
 
 define(
         'AUTHORS_SQL',
-        "SELECT a.AvtorId AS id, CONCAT(n.FirstName,' ',n.MiddleName,' ',n.LastName) AS sort, CONCAT(n.FirstName,' ',n.MiddleName,' ',n.LastName) AS name "
+        "SELECT n.AvtorId AS id, CONCAT(n.FirstName,' ',n.MiddleName,' ',n.LastName) AS sort, CONCAT(n.FirstName,' ',n.MiddleName,' ',n.LastName) AS name "
         ." FROM libavtorname n"
     );
 
@@ -136,13 +136,18 @@ class Author extends Base {
         return new Author ($authorId, $data );
     }
     
-    public static function getAuthorByBookId ($bookId) {
+    public static function getAuthorByBookId ($bookId, $type = 'author') {
+        
+        if ($type == 'author')
+            $join = " JOIN libavtor a ON a.AvtorId = n.AvtorId";
+        else
+            $join = " JOIN libtranslator a ON a.TranslatorId = n.AvtorId";
         
         $query = AUTHORS_SQL
-            ." JOIN libavtor a ON a.AvtorId = n.AvtorId"
+            .$join
             ." WHERE a.BookId = ?"
             ;
-            
+
         $params = array ($bookId);
         
         list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);

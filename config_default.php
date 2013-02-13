@@ -120,13 +120,20 @@
      * 0 : No
      */
     $config['cops_author_split_first_letter'] = "1";  
+
+    /*
+     * split series by first letter
+     * 1 : Yes
+     * 0 : No
+     */
+    $config['cops_serie_split_first_letter'] = "1";  
     
     /*
      * Enable of Fancyapps (for popups)
      * 1 : Yes (enable)
      * 0 : No
      */
-    $config['cops_use_fancyapps'] = "1";  
+    $config['cops_use_fancyapps'] = "0";  
     
     /*
      * Update Epub metadata before download

@@ -236,6 +236,8 @@ class Page
                 return new PageAllAuthors ($id, $query, $n);
             case Base::PAGE_AUTHORS_FIRST_LETTER :
                 return new PageAllAuthorsLetter ($id, $query, $n);
+            case Base::PAGE_SERIES_FIRST_LETTER :
+                return new PageAllSeriesLetter ($id, $query, $n);            
             case Base::PAGE_AUTHOR_DETAIL :
                 return new PageAuthorDetail ($id, $query, $n);
             case Base::PAGE_ALL_TAGS :
@@ -260,6 +262,7 @@ class Page
                 return new PageQueryResult ($id, $query, $n);
             case Base::PAGE_BOOK_DETAIL :
                 return new PageBookDetail ($id, $query, $n);
+            
             default:
                 $page = new Page ($id, $query, $n);
                 $page->idPage = "cops:catalog";
@@ -357,6 +360,23 @@ class PageAllAuthors extends Page
     }
 }
 
+
+class PageAllSeriesLetter extends Page
+{
+    public function InitializeContent () 
+    {
+        global $config;
+        
+        $this->idPage = Serie::getEntryIdByLetter ($this->idGet);
+        $this->entryArray = Serie::getSeriesByStartingLetter($this->idGet);
+        
+        //var_dump($this->entryArray);
+        //die;
+        
+        $this->title = str_format (localize ("splitByLetter.letter"), str_format (localize ("seriesword", count ($this->entryArray)), count ($this->entryArray)), $this->idGet);
+    }
+}
+
 class PageAllAuthorsLetter extends Page
 {
     public function InitializeContent () 
@@ -428,8 +448,16 @@ class PageAllSeries extends Page
 {
     public function InitializeContent () 
     {
+        
+        global $config;
+        
         $this->title = localize("series.title");
-        $this->entryArray = Serie::getAllSeries();
+        if ($config['cops_author_split_first_letter'] == 1) {
+            $this->entryArray = Serie::getAllSeriesByFirstLetter();
+        }
+        else {
+            $this->entryArray = Serie::getAllSeries();
+        }
         $this->idPage = Serie::ALL_SERIES_ID;
     }
 }
@@ -516,6 +544,7 @@ abstract class Base
     const PAGE_BOOK_DETAIL = "13";
     const PAGE_ALL_CUSTOMS = "14";
     const PAGE_CUSTOM_DETAIL = "15";
+    const PAGE_SERIES_FIRST_LETTER = "16";
 
     const COMPATIBILITY_XML_ALDIKO = "aldiko";
     

@@ -22,9 +22,10 @@ define ('SQL_BOOK_COLUMNS',
         .",GenreCode, GenreDesc, GenreMeta, SeqName "
         );
         
+//TODO: bug: some books are repeated twice in list
 define ('SQL_BOOKS_LEFT_JOIN',
             "LEFT OUTER JOIN librate ON librate.BookId = libbook.BookId"
-            ." LEFT JOIN libgenre ON libbook.BookId = libgenre.BookId"
+            ." LEFT OUTER JOIN libgenre ON libbook.BookId = libgenre.BookId"
             ." LEFT JOIN libgenrelist ON libgenrelist.GenreId = libgenre.GenreId"
             ." LEFT JOIN libseq ON libbook.BookId = libseq.BookId"
             ." LEFT JOIN libseqname ON libseqname.SeqId = libseq.SeqId"
@@ -32,8 +33,6 @@ define ('SQL_BOOKS_LEFT_JOIN',
 
 define ('SQL_BOOKS_BY_FIRST_LETTER', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where upper (books.sort) like ? order by libbook.sort");
-define ('SQL_BOOKS_BY_SERIE', "select {0} from libbook_series_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where libbook_series_link.book = libbook.BookId and series = ? {1} order by series_index");
 define ('SQL_BOOKS_BY_TAG', "select {0} from libbook_tags_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where libbook_tags_link.book = libbook.BookId and tag = ? {1} order by sort");
 define ('SQL_BOOKS_BY_CUSTOM', "select {0} from {2}, libbook " . SQL_BOOKS_LEFT_JOIN . "
@@ -51,7 +50,7 @@ class Book extends Base {
     
     const SQL_BOOKS_LEFT_JOIN = SQL_BOOKS_LEFT_JOIN;
     const SQL_BOOKS_BY_FIRST_LETTER = SQL_BOOKS_BY_FIRST_LETTER;
-    const SQL_BOOKS_BY_SERIE = SQL_BOOKS_BY_SERIE;
+    //const SQL_BOOKS_BY_SERIE = SQL_BOOKS_BY_SERIE;
     const SQL_BOOKS_BY_TAG = SQL_BOOKS_BY_TAG;
     const SQL_BOOKS_BY_CUSTOM = SQL_BOOKS_BY_CUSTOM;
     const SQL_BOOKS_QUERY = SQL_BOOKS_QUERY;
@@ -72,6 +71,7 @@ class Book extends Base {
     public $rating;
     public $datas = NULL;
     public $authors = NULL;
+    public $translators = NULL;
     public $serie = NULL;
     public $keywords = NULL;
     public $format = array();
@@ -152,9 +152,19 @@ class Book extends Base {
     public function getAuthors () {
         
         if (is_null ($this->authors)) {
-            $this->authors = Author::getAuthorByBookId ($this->id);
+            $this->authors = Author::getAuthorByBookId ($this->id, 'author');
         }
         return $this->authors;
+    }
+
+    public function getTranslators() {
+        
+        if (is_null ($this->translators)) {
+            
+            $this->translators = Author::getAuthorByBookId ($this->id, 'translator');
+        }
+        
+        return $this->translators;
     }
     
     public function getFilterString () {
@@ -180,7 +190,8 @@ class Book extends Base {
         return "and " . $result;
     }
     
-    public function getAuthorsName () {
+    public function getAuthorsName() {
+
         $authorList = null;
         foreach ($this->getAuthors () as $author) {
             if ($authorList) {
@@ -192,9 +203,26 @@ class Book extends Base {
             }
         }
         return $authorList;
+    
+    }
+
+    public function getTranslatorsName() {
+
+        $authorList = null;
+        foreach ($this->getTranslators () as $author) {
+            if ($authorList) {
+                $authorList = $authorList . ", " . $author->name;
+            }
+            else
+            {
+                $authorList = $author->name;
+            }
+        }
+        return $authorList;
+    
     }
     
-    public function getSerie () {
+    public function getSerie() {
         
         if (is_null ($this->serie)) {
             $this->serie = Serie::getSerieByBookId ($this->id);
@@ -423,7 +451,14 @@ class Book extends Base {
 
     
     public static function getBooksBySeries($serieId, $n) {
-        return self::getEntryArray (self::SQL_BOOKS_BY_SERIE, array ($serieId), $n);
+        
+        $SQL_BOOKS_BY_SERIE = "SELECT {0} FROM libbook "
+            . SQL_BOOKS_LEFT_JOIN
+            ." WHERE libseq.SeqId = ? {1} "
+            ." ORDER BY libbook.title"
+            ;
+        
+        return self::getEntryArray ($SQL_BOOKS_BY_SERIE, array ($serieId), $n);
     }
     
     public static function getBooksByTag($tagId, $n) {
@@ -543,7 +578,9 @@ where data.book = libbook.BookId and data.id = ?');
         while ($post = $result->fetch_row())
         {
             //fix flubusta html bug:
-            $annotations[] = str_replace("<p class=book>", "<p class='book'>", $post[0] );
+            $str = str_replace("<p class=book>", "<p class='f_book'>", $post[0] );
+            $str = str_replace("[hr]", "<hr/>", $str);
+            $annotations[] = $str;
         }
         
         return $annotations;

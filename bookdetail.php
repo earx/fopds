@@ -11,7 +11,9 @@ require_once ("config.php");
 require_once ("book.php");
 
 $book = Book::getBookById($_GET["id"]);
-$authors = $book->getAuthors ();
+$authors = $book->getAuthors();
+$translators= $book->getTranslators();
+
 $tags = $book->getTags ();
 $serie = $book->getSerie ();
 $book->getLinkArray ();
@@ -53,6 +55,24 @@ $book->getLinkArray ();
 ?>
             </div>
         </div>
+        
+<?php if ( !empty($translators) ): ?>
+        <div class="entrySection">
+            <span><?php echo localize("translators.title") ?></span>
+            <div class="buttonEffect pad6">
+<?php
+            $i = 0;
+            foreach ($translators as $author) {
+                if ($i > 0) echo ", ";
+?>
+                <a href="index.php<?php echo str_replace ("&", "&amp;", $author->getUri ()) ?>"><?php echo htmlspecialchars ($author->name) ?></a>
+<?php
+            }
+?>
+            </div>
+        </div>
+<?php endif; ?>        
+        
         <div class="entrySection">
             <span><?php echo localize("tags.title") ?></span>
             <div class="buttonEffect pad6">
@@ -67,19 +87,25 @@ $book->getLinkArray ();
 ?>
             </div>
         </div>
-<?php
-        if (!is_null ($serie))
-        {
-?>
+
+<?php if (!is_null ($serie)): ?>
         <div class="entrySection">
             <div class="buttonEffect pad6">
                 <a href="index.php<?php echo str_replace ("&", "&amp;", $serie->getUri ()) ?>"><?php echo localize("series.title") ?></a>
             </div>
             <?php echo str_format (localize ("content.series.data"), $book->seriesIndex, htmlspecialchars ($serie->name)) ?>
         </div>
-<?php
-        }
-?>
+<?php endif;  ?>
+
+<?php if (!is_null ($serie)): ?>
+        <div class="entrySection">
+            <div class="buttonEffect pad6">
+                <a href="index.php<?php echo str_replace ("&", "&amp;", $serie->getUri ()) ?>"><?php echo localize("series.title") ?></a>
+            </div>
+            <?php echo str_format (localize ("content.series.data"), $book->seriesIndex, htmlspecialchars ($serie->name)) ?>
+        </div>
+<?php endif;  ?>
+
         <div class="entrySection">
             <span><?php echo localize("config.Language.label") ?></span>
             <?php echo $book->getLanguages () ?>

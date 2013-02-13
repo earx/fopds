@@ -8,6 +8,12 @@
 
 require_once('base.php');
 
+define(
+        'SERIES_SQL',
+        "SELECT n.SeqId AS id, SeqName AS sort, SeqName AS name "
+        ." FROM libseqname n"
+    );
+
 class Serie extends Base {
     const ALL_SERIES_ID = "calibre:series";
     
@@ -35,6 +41,69 @@ class Serie extends Base {
             str_format (localize("series.alphabetical"), $nSeries), "text", 
             array ( new LinkNavigation ("?page=".parent::PAGE_ALL_SERIES)));
         return $entry;
+    }
+    
+    public static function getAllSeriesByFirstLetter() {
+        
+        $query ='SELECT SUBSTRING(UPPER(SeqName), 1, 1) as title, count(*) as count'
+                .' FROM libseqname'
+                .' GROUP BY SUBSTRING(UPPER(SeqName), 1, 1)'
+                .' ORDER BY SUBSTRING(UPPER(SeqName), 1, 1)'
+                ;
+        
+        $result = parent::getDb()->query($query);
+        $entryArray = array();
+        while ( $post = $result->fetchObject () )
+        {
+            array_push ($entryArray, new Entry ($post->title, self::getEntryIdByLetter ($post->title), 
+                str_format (localize("seriesword", $post->count), $post->count), "text", 
+                array ( new LinkNavigation ("?page=".parent::PAGE_SERIES_FIRST_LETTER."&id=". rawurlencode ($post->title)))));
+        }
+        
+        
+        return $entryArray;
+    }
+    
+    public static function getSeriesByStartingLetter($letter) {
+    
+        $SQL_AUTHORS_BY_FIRST_LETTER= "SELECT {0} FROM libseqname "
+            ." JOIN libseq ON libseq.SeqId= libseqname.SeqId"
+            ." WHERE UPPER(libseqname.SeqName) like ? "
+            ." GROUP BY libseq.SeqId, libseqname.SeqName"
+            ." ORDER BY libseqname.SeqName";
+        
+        return self::getEntryArray ($SQL_AUTHORS_BY_FIRST_LETTER, array ($letter . "%"));
+    }
+    
+    public static function getEntryArray ($query, $params) {
+
+        $COLUMNS = "libseqname.SeqId, libseqname.SeqName, COUNT(*)";
+        
+        $entryArray = array();
+        list ($totalNumber, $result) = parent::getDb()->executeQuery($query, $COLUMNS, "", $params, -1);
+
+        $aid =null;
+        $aname =null;
+        $count =null;
+        
+        $result->bind_result($aid, $aname, $count);
+        
+        while ($result->fetch())
+        {
+            $serie = new Serie ($aid, $aname);
+
+            array_push ($entryArray, new Entry ($aname, $serie->getEntryId (), 
+                str_format (localize("bookword", $count), $count), "text", 
+                array ( new LinkNavigation ($serie->getUri ()))));
+        }
+        
+        $result->close();
+
+        return $entryArray;
+    }    
+    
+    public static function getEntryIdByLetter ($startingLetter) {
+        return self::ALL_SERIES_ID.":letter:".$startingLetter;
     }
     
     public static function getSerieByBookId ($bookId) {
@@ -81,36 +150,30 @@ class Serie extends Base {
     
     //TODO
     public static function getAllSeries() {
-        
-        $query = 'SELECT SeqId AS id, SeqName AS name'
-            ." FROM libseqname "
-            ." WHERE SeqId = ?"
-            ;
 
-        $params = array ($serieId);
+        $query = "SELECT n.SeqId AS id, SeqName AS sort, SeqName AS name, count(*) as count"
+        ." FROM libseqname n"
+        ." JOIN libseq a ON a.SeqId = n.SeqId"
+        ." GROUP BY n.SeqId, n.SeqName"
+        ." ORDER BY n.SeqName"
+        ;
+
+        $params = array ();
         
         list ($totalNumber, $stmt) = parent::getDb()->executeQuery($query, '', '', $params);
             
         $result = $stmt->get_result();
-        $post = $result->fetch_object();
 
         $entryArray = array();
-        while ($post = $result->fetchObject ())
+        while ($post = $result->fetch_object())
         {
             $serie = new Serie ($post->id, $post->sort);
             array_push ($entryArray, new Entry ($serie->name, $serie->getEntryId (), 
                 str_format (localize("bookword", $post->count), $post->count), "text", 
                 array ( new LinkNavigation ($serie->getUri ()))));
         }
-        return $entryArray;
-    
-        
-//        $result = parent::getDb ()->query('select series.id as id, series.name as name, series.sort as sort, count(*) as count
-//from series, books_series_link
-//where series.id = series
-//group by series.id, series.name, series.sort
-//order by series.sort');
 
+        return $entryArray;
     }
 }
 ?>
