@@ -97,24 +97,27 @@ class Data extends Base {
 
         //TODO: provide link
         $textData = "";
-        return new Link ("fetch.php?id=$book->id" . $textData, $mime, $rel, $title);
+        //return new Link ("fetch.php?id=$book->id" . $textData, $mime, $rel, $title);
         
         if (!is_null ($idData))
         {
             $textData = "&data=" . $idData;
         }
+
+        if ($type != "jpg") $textData .= "&type=" . $type;
+        return new Link ("fetch.php?id=$book->id" . $textData, $mime, $rel, $title);
         
-        if (preg_match ('/^\//', $config['calibre_directory']) || // Linux /
-            preg_match ('/^\w\:/', $config['calibre_directory']) || // Windows X:
-            ($type == "epub" && $config['cops_update_epub-metadata']))
-        {
-            if ($type != "jpg") $textData .= "&type=" . $type;
-            return new Link ("fetch.php?id=$book->id" . $textData, $mime, $rel, $title);
-        }
-        else
-        {
-            return new Link (str_replace('%2F','/',rawurlencode ($book->path."/".$filename)), $mime, $rel, $title);
-        }
+        //if (preg_match ('/^\//', $config['calibre_directory']) || // Linux /
+        //    preg_match ('/^\w\:/', $config['calibre_directory']) || // Windows X:
+        //    ($type == "epub" && $config['cops_update_epub-metadata']))
+        //{
+        //    if ($type != "jpg") $textData .= "&type=" . $type;
+        //    return new Link ("fetch.php?id=$book->id" . $textData, $mime, $rel, $title);
+        //}
+        //else
+        //{
+        //    return new Link (str_replace('%2F','/',rawurlencode ($book->path."/".$filename)), $mime, $rel, $title);
+        //}
     }
 }
 ?>

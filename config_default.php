@@ -3,7 +3,7 @@
  * COPS (Calibre OPDS PHP Server) class file
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author     S�bastien Lucas <sebastien@slucas.fr>
+ * @author     Sébastien Lucas <sebastien@slucas.fr>
  */
 
     if (!isset($config))
@@ -174,5 +174,10 @@
     $config['mysql_db']     = 'books';
     $config['mysql_user']   = 'root';
     $config['mysql_pwd']    = 'root';
+
+    //Flibusta 
+    $config['flibusta_folder']    = '/home/evg/Загрузки/fb2.Flibusta.Net/'; //where are stored zip bundles with FB2 files - full path
+    $config['flibusta_cache']     = 'cache'; //where are stored extracted fb files. path is relative to cops folder
+    
     
 ?>

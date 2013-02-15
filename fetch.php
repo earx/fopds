@@ -3,21 +3,45 @@
  * COPS (Calibre OPDS PHP Server) 
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author     Gordon Page <gordon@incero.com> with integration/modification by Sébastien Lucas <sebastien@slucas.fr>
+ * @author     Gordon Page <gordon@incero.com> with integration/modification by SÃ©bastien Lucas <sebastien@slucas.fr>
  */
+    
+    /** send file to browser
+     * @param string $filename full path
+     * @param string $type mime type. for zipped - 'ZIP'
+     */
+    function sendFile($filename, $type = 'zip') {
+
+        global $config;
+        
+        $expires = 60*60*24*14;
+        
+        header("Pragma: public");
+        header("Cache-Control: maxage=".$expires);
+        header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
+
+        header("Content-Type: " . Data::$mimetypes[$type]);
+        
+        if ($type == "jpg") {
+            header('Content-Disposition: filename="' . basename ($filename) . '"');
+        } else {
+            header('Content-Disposition: attachment; filename="' . basename ($filename) . '"');
+        }
+        
+    }
+    
+    define ('DS', DIRECTORY_SEPARATOR);
     
     require_once ("config.php");
     require_once ("book.php");
     require_once ("data.php");
      
     global $config;
-    $expires = 60*60*24*14;
-    header("Pragma: public");
-    header("Cache-Control: maxage=".$expires);
-    header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
+
     $bookId = getURLParam ("id", NULL);
     $type = getURLParam ("type", "jpg");
     $idData = getURLParam ("data", NULL);
+    
     if (is_null ($bookId))
     {
         $book = Book::getBookByDataId($idData);
@@ -26,90 +50,89 @@
     {
         $book = Book::getBookById($bookId);
     }
-     
-    switch ($type)
-    {
-        case "jpg":
-            header("Content-Type: image/jpeg");
-            if (isset($_GET["width"]))
-            {
-                $file = $book->getFilePath ($type);
-                // get image size
-                if($size = GetImageSize($file)){
-                    $w = $size[0];
-                    $h = $size[1];
-                    //set new size
-                    $nw = $_GET["width"];
-                    $nh = ($nw*$h)/$w;
-                }
-                else{
-                    //set new size
-                    $nw = "160";
-                    $nh = "120";
-                }
-                //draw the image
-                $src_img = imagecreatefromjpeg($file);
-                $dst_img = imagecreatetruecolor($nw,$nh);
-                imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $nw, $nh, $w, $h);//resizing the image
-                imagejpeg($dst_img,null,100);
-                imagedestroy($src_img);
-                imagedestroy($dst_img);
-                return;
-            }
-            if (isset($_GET["height"]))
-            {
-                $file = $book->getFilePath ($type);
-                // get image size
-                if($size = GetImageSize($file)){
-                    $w = $size[0];
-                    $h = $size[1];
-                    //set new size
-                    $nh = $_GET["height"];
-                    $nw = ($nh*$w)/$h;
-                }
-                else{
-                    //set new size
-                    $nw = "160";
-                    $nh = "120";
-                }
-                //draw the image
-                $src_img = imagecreatefromjpeg($file);
-                $dst_img = imagecreatetruecolor($nw,$nh);
-                imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $nw, $nh, $w, $h);//resizing the image
-                imagejpeg($dst_img,null,100);
-                imagedestroy($src_img);
-                imagedestroy($dst_img);
-                return;
-            }
-            break;
-        default:
-            header("Content-Type: " . Data::$mimetypes[$type]);
-            break;
-    }
-    $file = $book->getFilePath ($type, $idData, true);
-    if ($type == "epub" && $config['cops_update_epub-metadata'])
-    {
-        $book->getUpdatedEpub ($idData);
-        return;
-    }
-    if ($type == "jpg") {
-        header('Content-Disposition: filename="' . basename ($file) . '"');
-    } else {
-        header('Content-Disposition: attachment; filename="' . basename ($file) . '"');
-    }
     
-    $dir = $config['calibre_internal_directory'];
-    if (empty ($config['calibre_internal_directory'])) {
-        $dir = $config['calibre_directory'];
-    }
+    $cache_dir = dirname(__FILE__).DS.$config['flibusta_cache']; //relative to current folder
     
-    if (empty ($config['cops_x_accel_redirect'])) {
-        $filename = $dir . $file;
-        $fp = fopen($filename, 'rb');
-        header("Content-Length: " . filesize($filename));
-        fpassthru($fp);
+    //extracted files will be stored as zipped
+    $filename = $book->id.'.'.$book->fileType.'.zip';
+    
+    if (! file_exists( $cache_dir ) ) {
+        
+        if ( mkdir($cache_dir, 0777) )
+            echo "cache created: $cache_dir <br>";
+        else 
+            echo "FAIL: unable to create cache: $cache_dir <br>";
     }
     else {
-        header ($config['cops_x_accel_redirect'] . ": " . $dir . $file);
+
+        //check if the file already extracted
+        //TODO: break folder to few folders to avoid ahving too much files in one folder
+        
+        if (file_exists($cache_dir.DS.$filename)) {
+            
+            sendFile($cache_dir.DS.$filename);
+            die;
+        }
+        
     }
+
+    $list = glob($config['flibusta_folder'].DS.'*fb*.zip');
+
+    //search for large zip file which contains selected book    
+    $matches = array();
+    $file = null;
+
+    foreach ($list as $line) {
+        
+        preg_match_all('/(-)(?P<start>[0-9]+)-(?P<end>[0-9]+)/', $line, $matches);
+        //echo "<p>$line";
+        
+        if ($book->id >= $matches['start'][0] && $book->id <= $matches['end'][0]) {
+            
+            $file = $line;
+            break;
+        }
+    }
+    
+    if (! $file ) {
+        
+        echo 'cannot find bundle for file:'.$book->id.'.'.$book->fileType;
+        die;
+    }
+    
+    //var_dump($book, $file, $book->id.'.'.$book->fileType);
+    $zip = new ZipArchive;
+
+    $res = $zip->open($file);
+
+    if ($res === TRUE) {
+
+        // extract it to the path we determined above
+        $zip->extractTo($cache_dir.DS, $book->id.'.'.$book->fileType );
+        $zip->close();
+
+        //pack it ro individual zip file
+        $zip = new ZipArchive;
+        
+        echo "<p>".$cache_dir.DS.$filename."<BR>";
+
+        if ($zip->open($cache_dir.DS.$filename,  ZipArchive::CREATE) === TRUE) {
+            
+            $zip->addFile($cache_dir.DS.$book->id.'.'.$book->fileType, $book->id.'.'.$book->fileType);
+            $zip->close();
+            
+            unlink($cache_dir.DS.$book->id.'.'.$book->fileType); //remove uncompressed one
+
+            sendFile($cache_dir.DS.$filename);
+
+        } else {
+            echo 'failed to create archive';
+        }        
+
+    }
+    else {
+        
+        echo 'FAIL: unable to open input file:'.$file;
+    }
+
 ?>

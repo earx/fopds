@@ -23,25 +23,18 @@ $book->getLinkArray();
 ?>
 <div class="bookpopup">
     <div class="booke">
+        <?php if ($book->hasCover): ?>
         <div class="cover">
-            <?php
-                if ($book->hasCover) {
-            ?>
             <a href="fetch.php?id=<?php echo $book->id ?>"><img src="fetch.php?id=<?php echo $book->id ?>&amp;height=150" alt="<?php echo localize("i18n.coversection") ?>" /></a>
-            <?php
-                }
-            ?>
         </div>
+        <?php endif; ?>
+        
+        <?php foreach ($book->getDatas() as $data): ?>
         <div class="download">
-<?php
-            foreach ($book->getDatas() as $data)
-            {
-?>    
-                <div class="button buttonEffect"><a href="<?php echo $data->getHtmlLink () ?>"><?php echo $data->format ?></a></div>
-<?php
-            }
-?>
+            <div class="button buttonEffect"><a href="<?php echo $data->getHtmlLink(); ?>"><?php echo $data->format ?></a></div>
         </div>
+        <?php endforeach; ?>
+        
         <div class="entryTitle"><a rel="bookmark" href="<?php echo 'index.php' . $book->getUri () ?>"><img src="<?php echo getUrlWithVersion("images/Link.png") ?>" alt="permalink" /></a><?php echo htmlspecialchars ($book->title) ?></div>
         <div class="entrySection">
             <span><?php echo localize("authors.title") ?></span>

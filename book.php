@@ -34,9 +34,9 @@ define ('SQL_BOOKS_LEFT_JOIN',
         );
 
 define ('SQL_BOOKS_BY_FIRST_LETTER', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where upper (libbook.title) like ? order by libbook.title");
+                                                    where libbook.deleted = 0 and upper (libbook.title) like ? order by libbook.title");
 define ('SQL_BOOKS_BY_TAG', "select {0} from libbook_tags_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where libbook_tags_link.book = libbook.BookId and tag = ? {1} order by sort");
+                                                    where libbook.deleted = 0 and libbook_tags_link.book = libbook.BookId and tag = ? {1} order by sort");
 define ('SQL_BOOKS_BY_CUSTOM', "select {0} from {2}, libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where {2}.book = libbook.BookId and {2}.{3} = ? {1} order by sort");
 define ('SQL_BOOKS_QUERY', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
@@ -85,12 +85,14 @@ class Book extends Base {
 
     
     public function __construct($line) {
+        
         global $config;
+        
         $this->id = $line->id;
         $this->title = $line->title;
         $this->lang = $line->lang;
         $this->keywords = $line->keywords;
-        $this->filetype = $line->fileType;
+        $this->fileType = $line->fileType;
         $this->fileSize = $line->fileSize;
 
         $this->time = strtotime ($line->time);
@@ -98,7 +100,7 @@ class Book extends Base {
         $this->year = strtotime ($line->year);
         $this->pubdate = strtotime ($line->year);
 
-        $this->hasCover = 0;
+        $this->hasCover = false;
         
         //$this->seqname=$line->SeqName;        
         $this->rating = $line->Rate;
@@ -254,6 +256,8 @@ class Book extends Base {
         if (is_null ($this->datas)) {
             $this->datas = array( new Data ($this, $this) );
         }
+        
+        //var_dump($this->datas);
         return $this->datas;
     }
     
