@@ -34,7 +34,7 @@ define ('SQL_BOOKS_LEFT_JOIN',
         );
 
 define ('SQL_BOOKS_BY_FIRST_LETTER', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where upper (books.sort) like ? order by libbook.sort");
+                                                    where upper (libbook.title) like ? order by libbook.title");
 define ('SQL_BOOKS_BY_TAG', "select {0} from libbook_tags_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where libbook_tags_link.book = libbook.BookId and tag = ? {1} order by sort");
 define ('SQL_BOOKS_BY_CUSTOM', "select {0} from {2}, libbook " . SQL_BOOKS_LEFT_JOIN . "
@@ -610,7 +610,7 @@ where data.book = libbook.BookId and data.id = ?');
         {
             array_push ($entryArray, new Entry ($post->title, self::getEntryIdByLetter ($post->title), 
                 str_format (localize("bookword", $post->count), $post->count), "text", 
-                array ( new LinkNavigation ("?page=".parent::PAGE_SERIES_FIRST_LETTER."&id=". rawurlencode ($post->title)))));
+                array ( new LinkNavigation ("?page=".parent::PAGE_BOOKS_FIRST_LETTER."&id=". rawurlencode ($post->title)))));
         }
         
         

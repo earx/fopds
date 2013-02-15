@@ -102,7 +102,7 @@ $book->getLinkArray();
 <?php if (!is_null ($genres)): ?>
         <div class="entrySection">
             <div class="buttonEffect pad6">
-                <a href="index.php<?php echo str_replace ("&", "&amp;", $serie->getUri ()) ?>"><?php echo localize("genresword.title") ?></a>
+                <a href="index.php<?php //echo str_replace ("&", "&amp;", $genres->getUri ()) ?>"><?php echo localize("genresword.title") ?></a>
             </div>
             TODO
             <?php //echo str_format (localize ("content.genres.data"), $book->GenresIndex, htmlspecialchars ($serie->name)) ?>

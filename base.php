@@ -254,6 +254,8 @@ class Page
                 return new PageAllBooks ($id, $query, $n);
             case Base::PAGE_ALL_BOOKS_LETTER:
                 return new PageAllBooksLetter ($id, $query, $n);
+            case Base::PAGE_BOOKS_FIRST_LETTER :
+                return new PageAllBooksLetter ($id, $query, $n);            
             case Base::PAGE_ALL_RECENT_BOOKS :
                 return new PageRecentBooks ($id, $query, $n);
             case Base::PAGE_SERIE_DETAIL : 
@@ -482,7 +484,7 @@ class PageAllBooks extends Page
         global $config;
         
         if ($config['cops_books_split_first_letter'] == 1) {
-            $this->entryArray = Book::PageAllBooksLetter();
+            $this->entryArray = Book::getAllBooksByFirstLetter();
         }
         else {
             $this->entryArray = Book::getAllBooks();
@@ -541,19 +543,26 @@ abstract class Base
     const PAGE_ALL_AUTHORS = "1";
     const PAGE_AUTHORS_FIRST_LETTER = "2";
     const PAGE_AUTHOR_DETAIL = "3";
+
     const PAGE_ALL_BOOKS = "4";
     const PAGE_ALL_BOOKS_LETTER = "5";
+    const PAGE_BOOK_DETAIL = "13";
+    const PAGE_BOOKS_FIRST_LETTER = "20";
+
     const PAGE_ALL_SERIES = "6";
     const PAGE_SERIE_DETAIL = "7";
+    const PAGE_SERIES_FIRST_LETTER = "16";
+
     const PAGE_OPENSEARCH = "8";
     const PAGE_OPENSEARCH_QUERY = "9";
+
     const PAGE_ALL_RECENT_BOOKS = "10";
+
     const PAGE_ALL_TAGS = "11";
     const PAGE_TAG_DETAIL = "12";
-    const PAGE_BOOK_DETAIL = "13";
+
     const PAGE_ALL_CUSTOMS = "14";
     const PAGE_CUSTOM_DETAIL = "15";
-    const PAGE_SERIES_FIRST_LETTER = "16";
 
     //TODO
     const PAGE_GENRE_DETAIL = "17";
