@@ -17,7 +17,7 @@ require_once('php-epub-meta/epub.php');
 // Silly thing because PHP forbid string concatenation in class const
 
 define ('SQL_BOOK_COLUMNS',
-        "libbook.BookID as id, libbook.title as title, time, year, keywords, librate.Rate, lang, fileType, fileSize"
+        "libbook.BookID as id, libbook.title as title, time, year, keywords, AVG(librate.Rate) as Rate, lang, fileType, fileSize"
         .",libbook.md5 as uuid"
         //.",GenreCode, GenreDesc, GenreMeta, "
         //.",SeqName "
@@ -34,9 +34,9 @@ define ('SQL_BOOKS_LEFT_JOIN',
         );
 
 define ('SQL_BOOKS_BY_FIRST_LETTER', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where libbook.deleted = 0 and upper (libbook.title) like ? order by libbook.title");
+                                                    where libbook.deleted = 0 and upper (libbook.title) LIKE ? GROUP BY libbook.BookId ORDER BY libbook.title");
 define ('SQL_BOOKS_BY_TAG', "select {0} from libbook_tags_link, libbook " . SQL_BOOKS_LEFT_JOIN . "
-                                                    where libbook.deleted = 0 and libbook_tags_link.book = libbook.BookId and tag = ? {1} order by sort");
+                                                    where libbook.deleted = 0 and libbook_tags_link.book = libbook.BookId and tag = ? {1} GROUP BY libbook.BookId  ORDER BY sort");
 define ('SQL_BOOKS_BY_CUSTOM', "select {0} from {2}, libbook " . SQL_BOOKS_LEFT_JOIN . "
                                                     where {2}.book = libbook.BookId and {2}.{3} = ? {1} order by sort");
 define ('SQL_BOOKS_QUERY', "select {0} from libbook " . SQL_BOOKS_LEFT_JOIN . "
@@ -433,7 +433,7 @@ class Book extends Base {
 
     public static function getCount() {
         global $config;
-        $nBooks = parent::getDb ()->query('select count(*) from libbook')->fetchColumn();
+        $nBooks = parent::getDb ()->query('SELECT COUNT(*) FROM libbook WHERE deleted=0')->fetchColumn();
         $result = array();
         $entry = new Entry (localize ("allbooks.title"), 
                           self::ALL_BOOKS_ID, 
@@ -454,10 +454,12 @@ class Book extends Base {
             . SQL_BOOKS_LEFT_JOIN 
             ." WHERE libavtor.bookID = libbook.bookID"
                 ." AND libavtor.AvtorId = ? {1}"
+                ." AND libbook.deleted = 0"
+                ." GROUP BY libbook.BookId"
             ." ORDER BY libbook.Year"
             ;
-            //TODO: exlude deleted?
-        
+//fb("getBooksByAuthor($authorId, $n)");
+
         return self::getEntryArray ($SQL_BOOKS_BY_AUTHOR, array ($authorId), $n);
     }
 
@@ -468,6 +470,8 @@ class Book extends Base {
             . SQL_BOOKS_LEFT_JOIN
             ." LEFT JOIN libseq ON libbook.BookId = libseq.BookId"
             ." WHERE libseq.SeqId = ? {1} "
+            ." AND libbook.deleted = 0"
+            ." GROUP BY libbook.BookId"
             ." ORDER BY libbook.title"
             ;
         
@@ -489,6 +493,7 @@ class Book extends Base {
             ." FROM libbook "
             . self::SQL_BOOKS_LEFT_JOIN
             ." WHERE libbook.BookId = ?"
+            ." GROUP BY libbook.BookId"
             ;
 
         $params = array ($bookId);
@@ -507,8 +512,13 @@ class Book extends Base {
     
     public static function getBookByDataId($dataId) {
         $result = parent::getDb ()->prepare('select ' . self::BOOK_COLUMNS . ', data.name, data.format
-from data, libbook ' . self::SQL_BOOKS_LEFT_JOIN . '
-where data.book = libbook.BookId and data.id = ?');
+from data, libbook ' . self::SQL_BOOKS_LEFT_JOIN
+. '
+where data.book = libbook.BookId and data.id = ?'
+." AND libbook.deleted = 0"
+." GROUP BY libbook.BookId"
+
+);
         $result->execute (array ($dataId));
         while ($post = $result->fetchObject ())
         {
@@ -527,7 +537,7 @@ where data.book = libbook.BookId and data.id = ?');
     
     public static function getAllBooks() {
         
-        $result = parent::getDb ()->query("SELECT title, COUNT(*) AS COUNT FROM libbook GROUP BY title");
+        $result = parent::getDb ()->query("SELECT title, COUNT(*) AS COUNT FROM libbook GROUP BY title WHERE libbook.deleted = 0" );
         $entryArray = array();
         while ($post = $result->fetchObject ())
         {
@@ -604,6 +614,7 @@ where data.book = libbook.BookId and data.id = ?');
         
         $query ='SELECT SUBSTRING(UPPER(title), 1, 1) as title, count(*) as count'
                 .' FROM libbook'
+                ." WHERE libbook.deleted = 0"
                 .' GROUP BY SUBSTRING(UPPER(title), 1, 1)'
                 .' ORDER BY SUBSTRING(UPPER(title), 1, 1)'
                 ;

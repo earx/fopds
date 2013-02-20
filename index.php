@@ -7,6 +7,7 @@
  *
  */
  
+	require_once('FirePHPCore/fb.php');
     require_once ("config.php");
     require_once ("mysqlidb.php");
     require_once ("base.php");

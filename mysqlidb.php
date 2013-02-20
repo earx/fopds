@@ -144,6 +144,9 @@ class MysqliDB {
         }
         
         $final_query = str_format ($query, $columns, $filter);
+        
+//fb($final_query, $params);
+        
         $prep_query = $this->db->prepare($final_query);
 
         if ( ! $prep_query ) {
