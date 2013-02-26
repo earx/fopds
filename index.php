@@ -246,7 +246,7 @@
             </div>
             <div class="bookdetail">
                 <a class="navigation" href="<?php echo $entry->book->getDetailUrl () ?>" />
-                <div class="entryTitle st"><?php echo htmlspecialchars ($entry->title) ?> <span class="sp">(<?php echo date ('Y', $entry->book->pubdate) ?>)</span> <span class="sr"><?php echo $entry->book->getRating () ?></span></div>
+                <div class="entryTitle st"><?php echo htmlspecialchars ($entry->title) ?> <span class="sr"><?php echo $entry->book->getRating () ?></span></div>
                 <div class="entryContent sa"><?php echo localize("authors.title") . " : " . htmlspecialchars ($entry->book->getAuthorsName ()) ?></div>
                 <div class="entryContent"><?php echo localize("tags.title") . " : " . htmlspecialchars ($entry->book->getTagsName ()) ?></div>
             <?php
@@ -254,7 +254,12 @@
 
                 if (!is_null ($serie)) {
             ?>
-                <div class="entryContent ss"><?php echo localize("series.title") . " : " . htmlspecialchars ($serie->name) . " (" . $entry->book->seriesIndex . ")" ?></div>
+                <div class="entryContent ss">
+				<?php
+					echo localize("series.title") . " : " . htmlspecialchars ($serie->name);
+					if ($entry->book->seriesIndex) echo " (" . $entry->book->seriesIndex . ")";
+				?>
+				</div>
             <?php
                 }
             ?>
