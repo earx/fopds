@@ -49,22 +49,47 @@ class Author extends Base {
     }
     
     public static function getAllAuthorsByFirstLetter() {
+
+        global $config;
         
-        $query ='SELECT SUBSTRING(UPPER(lastname), 1, 1) as title, count(*) as count'
-                .' FROM libavtorname'
-                .' GROUP BY SUBSTRING(UPPER(lastname), 1, 1)'
-                .' ORDER BY SUBSTRING(UPPER(lastname), 1, 1)'
+        $id     = parent::getDb()->escape( getURLParam('id','') );
+        $level  = parent::getDb()->escape( getURLParam('level',1) );
+
+        if ($level >=1)
+            $where = " WHERE lastname LIKE '$id%'";
+        else
+            $where = '';
+            
+        $query ="SELECT SUBSTRING(UPPER(lastname), 1, $level) as title, count(*) as count"
+                ." FROM libavtorname"
+                ." JOIN libavtor ON libavtor.AvtorId = libavtorname.AvtorId"
+                .$where
+                ." GROUP BY SUBSTRING(UPPER(lastname), 1, $level)"
+                ." ORDER BY SUBSTRING(UPPER(lastname), 1, $level)"
                 ;
         
         $result = parent::getDb()->query($query);
         $entryArray = array();
+        
         while ( $post = $result->fetchObject () )
         {
+            
+            if ( $post->count <= $config['items_max_on_level'] )
+            {
+                $linkstr = "?page=".parent::PAGE_AUTHORS_FIRST_LETTER ."&id=%s";
+            }
+            else
+            {
+                $linkstr = "?page=".parent::PAGE_ALL_AUTHORS ."&id=%s&level=".($level + 1);
+            }
+            
             array_push ($entryArray, new Entry ($post->title, Author::getEntryIdByLetter ($post->title), 
                 str_format (localize("authorword", $post->count), $post->count), "text", 
-                array ( new LinkNavigation ("?page=".parent::PAGE_AUTHORS_FIRST_LETTER."&id=". rawurlencode ($post->title)))));
+                array (
+                    new LinkNavigation (sprintf($linkstr, rawurlencode ($post->title) )  )
+                )
+            ));
         }
-        
         
         return $entryArray;
     }
@@ -74,8 +99,10 @@ class Author extends Base {
         $SQL_AUTHORS_BY_FIRST_LETTER= "SELECT {0} FROM libavtorname "
             ." JOIN libavtor ON libavtor.AvtorId = libavtorname.AvtorId"
             ." WHERE UPPER(libavtorname.lastname) like ? "
-            ." GROUP BY libavtorname.AvtorId, libavtorname.FirstName, libavtorname.LastName"
+            ." GROUP BY libavtorname.AvtorId"
             ." ORDER BY LastName";
+        
+        //fb($SQL_AUTHORS_BY_FIRST_LETTER);
         
         return self::getEntryArray ($SQL_AUTHORS_BY_FIRST_LETTER, array ($letter . "%"));
     }

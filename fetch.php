@@ -6,27 +6,80 @@
  * @author     Gordon Page <gordon@incero.com> with integration/modification by Sébastien Lucas <sebastien@slucas.fr>
  */
     
+    /**
+     * Get filename for the book
+     * @param Book book
+     * @return string translitated filename like Tom_Hanna_Somatics.123.fb2
+     */
+    function getBookFileName($book) {
+        
+        $tr = array(
+         "Ґ"=>"G","Ё"=>"YO","Є"=>"E","Ї"=>"YI","І"=>"I",
+         "і"=>"i","ґ"=>"g","ё"=>"yo","№"=>"#","є"=>"e",
+         "ї"=>"yi","А"=>"A","Б"=>"B","В"=>"V","Г"=>"G",
+         "Д"=>"D","Е"=>"E","Ж"=>"ZH","З"=>"Z","И"=>"I",
+         "Й"=>"Y","К"=>"K","Л"=>"L","М"=>"M","Н"=>"N",
+         "О"=>"O","П"=>"P","Р"=>"R","С"=>"S","Т"=>"T",
+         "У"=>"U","Ф"=>"F","Х"=>"H","Ц"=>"TS","Ч"=>"CH",
+         "Ш"=>"SH","Щ"=>"SCH","Ъ"=>"'","Ы"=>"YI","Ь"=>"",
+         "Э"=>"E","Ю"=>"YU","Я"=>"YA","а"=>"a","б"=>"b",
+         "в"=>"v","г"=>"g","д"=>"d","е"=>"e","ж"=>"zh",
+         "з"=>"z","и"=>"i","й"=>"y","к"=>"k","л"=>"l",
+         "м"=>"m","н"=>"n","о"=>"o","п"=>"p","р"=>"r",
+         "с"=>"s","т"=>"t","у"=>"u","ф"=>"f","х"=>"h",
+         "ц"=>"ts","ч"=>"ch","ш"=>"sh","щ"=>"sch","ъ"=>"'",
+         "ы"=>"yi","ь"=>"","э"=>"e","ю"=>"yu","я"=>"ya",
+         " "=>"_", ',' => '', '.' => ''
+        );
+        
+        
+        $author = Author::getAuthorByBookId($book->id);
+        $author = $author[0];
+        
+        $serie = Serie::getSerieByBookId($book->id);
+        
+        $filename = array();
+
+        //get lastname
+        $names = array_reverse( explode(' ', $author->name) );
+        $filename[] = strtr($names[0],$tr);
+
+        if ($serie) {
+            
+            $filename[] = strtr($serie->name,$tr);
+        }
+        
+        $filename[] = strtr($book->title,$tr);
+
+        //var_dump($book, $autor, $serie);
+        return strtolower( implode('_', $filename) ).'.'.$book->fileType.'.zip';
+    }
+    
     /** send file to browser
      * @param string $filename full path
      * @param string $type mime type. for zipped - 'ZIP'
      */
     function sendFile($filename, $type = 'zip') {
-
+        
         global $config;
         
-        $expires = 60*60*24*14;
-        
-        header("Pragma: public");
-        header("Cache-Control: maxage=".$expires);
-        header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
+        header("Location: ".dirname($_SERVER['SCRIPT_NAME']).DS.$config['flibusta_cache'].DS.$filename);
 
-        header("Content-Type: " . Data::$mimetypes[$type]);
-        
-        if ($type == "jpg") {
-            header('Content-Disposition: filename="' . basename ($filename) . '"');
-        } else {
-            header('Content-Disposition: attachment; filename="' . basename ($filename) . '"');
-        }
+        //global $config;
+        //
+        //$expires = 60*60*24*14;
+        //
+        //header("Pragma: public");
+        //header("Cache-Control: maxage=".$expires);
+        //header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
+        //
+        //header("Content-Type: " . Data::$mimetypes[$type]);
+        //
+        //if ($type == "jpg") {
+        //    header('Content-Disposition: filename="' . basename ($filename) . '"');
+        //} else {
+        //    header('Content-Disposition: attachment; filename="' . basename ($filename) . '"');
+        //}
         
     }
     
@@ -54,7 +107,9 @@
     $cache_dir = dirname(__FILE__).DS.$config['flibusta_cache']; //relative to current folder
     
     //extracted files will be stored as zipped
-    $filename = $book->id.'.'.$book->fileType.'.zip';
+    $filename = getBookFileName($book);
+    
+    //$book->id.'.'.$book->fileType.'.zip';
     
     if (! file_exists( $cache_dir ) ) {
         
@@ -63,18 +118,16 @@
         else 
             echo "FAIL: unable to create cache: $cache_dir <br>";
     }
-    else {
-
-        //check if the file already extracted
-        //TODO: break folder to few folders to avoid ahving too much files in one folder
+    
+    //check if the file already extracted
+    //TODO: break folder to few folders to avoid ahving too much files in one folder
+    
+    if (file_exists($cache_dir.DS.$filename)) {
         
-        if (file_exists($cache_dir.DS.$filename)) {
-            
-            sendFile($cache_dir.DS.$filename);
-            die;
-        }
-        
+        sendFile($filename);
+        die;
     }
+    
 
     $list = glob($config['flibusta_folder'].DS.'*fb*.zip');
 
@@ -123,7 +176,7 @@
             
             unlink($cache_dir.DS.$book->id.'.'.$book->fileType); //remove uncompressed one
 
-            sendFile($cache_dir.DS.$filename);
+            sendFile($filename);
 
         } else {
             echo 'failed to create archive';

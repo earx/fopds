@@ -611,21 +611,44 @@ where data.book = libbook.BookId and data.id = ?'
     }
     
     public static function getAllBooksByFirstLetter() {
+
+        global $config;
         
-        $query ='SELECT SUBSTRING(UPPER(title), 1, 1) as title, count(*) as count'
-                .' FROM libbook'
-                ." WHERE libbook.deleted = 0"
-                .' GROUP BY SUBSTRING(UPPER(title), 1, 1)'
-                .' ORDER BY SUBSTRING(UPPER(title), 1, 1)'
+        $id     = parent::getDb()->escape( getURLParam('id','') );
+        $level  = parent::getDb()->escape( getURLParam('level',1) );
+
+        $where = " WHERE libbook.deleted = 0";
+
+        if ($level >=1) {
+            
+            $where .= " AND title LIKE '$id%'";
+        }
+        
+        $query ="SELECT SUBSTRING(UPPER(title), 1, $level) as title, count(*) as count"
+                ." FROM libbook"
+                .$where
+                ." GROUP BY SUBSTRING(UPPER(title), 1, $level)"
+                ." ORDER BY SUBSTRING(UPPER(title), 1, $level)"
                 ;
         
         $result = parent::getDb()->query($query);
         $entryArray = array();
+        
         while ( $post = $result->fetchObject () )
         {
+
+            if ( $post->count <= $config['items_max_on_level'] )
+            {
+                $linkstr = "?page=".parent::PAGE_BOOKS_FIRST_LETTER ."&id=%s";
+            }
+            else
+            {
+                $linkstr = "?page=".parent::PAGE_ALL_BOOKS ."&id=%s&level=".($level + 1);
+            }
+            
             array_push ($entryArray, new Entry ($post->title, self::getEntryIdByLetter ($post->title), 
                 str_format (localize("bookword", $post->count), $post->count), "text", 
-                array ( new LinkNavigation ("?page=".parent::PAGE_BOOKS_FIRST_LETTER."&id=". rawurlencode ($post->title)))));
+                array ( new LinkNavigation ( sprintf($linkstr, rawurlencode ($post->title) )))));
         }
         
         

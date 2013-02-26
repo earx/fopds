@@ -51,6 +51,15 @@ class MysqliDB {
         
         return $this->db;
     }
+
+    /** Do real_escape_string
+     * @param string $string
+     * @return excaped string
+     */
+    public function escape( $string ) {
+        
+        return $this->db->real_escape_string($string);
+    }
     
     /** Connect to server
      * set internal db link

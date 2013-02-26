@@ -178,6 +178,7 @@
     //Flibusta 
     $config['flibusta_folder']    = '/home/evg/Загрузки/fb2.Flibusta.Net/'; //where are stored zip bundles with FB2 files - full path
     $config['flibusta_cache']     = 'cache'; //where are stored extracted fb files. path is relative to cops folder
-    
+  
+    $config['items_max_on_level']   = 500; //list will be divided by first letters if there more than this value items
     
 ?>
