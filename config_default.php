@@ -68,7 +68,7 @@
      * Icon for both OPDS and HTML catalog
      * Note that this has to be a real icon (.ico)
      */
-    $config['cops_icon'] = "favicon.ico";
+    $config['cops_icon'] = "/opds/cops/favicon.ico";
 
     /*
      * Show icon for authors, series, tags and books on OPDS feed
