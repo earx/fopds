@@ -29,7 +29,7 @@
          "с"=>"s","т"=>"t","у"=>"u","ф"=>"f","х"=>"h",
          "ц"=>"ts","ч"=>"ch","ш"=>"sh","щ"=>"sch","ъ"=>"'",
          "ы"=>"yi","ь"=>"","э"=>"e","ю"=>"yu","я"=>"ya",
-         " "=>"_", ',' => '', '.' => ''
+         " "=>"_", ',' => '', '.' => '', '!' => '', '"' => ''
         );
         
         
@@ -122,6 +122,7 @@
     //check if the file already extracted
     //TODO: break folder to few folders to avoid ahving too much files in one folder
     
+    //http://test.lo/opds/cops/fetch.php?page=3&id=12732
     if (file_exists($cache_dir.DS.$filename)) {
         
         sendFile($filename);
@@ -139,13 +140,17 @@
         
         preg_match_all('/(-)(?P<start>[0-9]+)-(?P<end>[0-9]+)/', $line, $matches);
         //echo "<p>$line";
+
+        //echo "<p>{$matches['start'][0]}, {$book->id}, {$matches['end'][0]}";
         
-        if ($book->id >= $matches['start'][0] && $book->id <= $matches['end'][0]) {
+        if ( (int) $book->id >= (int) $matches['start'][0] && (int) $book->id <= (int) $matches['end'][0]) {
             
             $file = $line;
             break;
         }
     }
+    //echo "<p>{$book->id}: $file";
+    //die;
     
     if (! $file ) {
         
@@ -155,7 +160,7 @@
     
     //var_dump($book, $file, $book->id.'.'.$book->fileType);
     $zip = new ZipArchive;
-
+    
     $res = $zip->open($file);
 
     if ($res === TRUE) {
@@ -167,15 +172,15 @@
         //pack it ro individual zip file
         $zip = new ZipArchive;
         
-        echo "<p>".$cache_dir.DS.$filename."<BR>";
-
         if ($zip->open($cache_dir.DS.$filename,  ZipArchive::CREATE) === TRUE) {
             
             $zip->addFile($cache_dir.DS.$book->id.'.'.$book->fileType, $book->id.'.'.$book->fileType);
             $zip->close();
             
-            unlink($cache_dir.DS.$book->id.'.'.$book->fileType); //remove uncompressed one
+            //unlink($cache_dir.DS.$book->id.'.'.$book->fileType); //remove uncompressed one
 
+    //echo $cache_dir.DS.$filename;
+    //die;
             sendFile($filename);
 
         } else {

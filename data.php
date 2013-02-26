@@ -23,7 +23,7 @@ class Data extends Base {
         'cbr'   => 'application/x-cbr',
         'doc'   => 'application/msword',
         'epub'  => 'application/epub+zip',
-        'fb2'   => 'text/fb2+xml',
+        'fb2'   => 'application/fb2+zip',
         'kobo'  => 'application/x-koboreader-ebook',
         'mobi'  => 'application/x-mobipocket-ebook',
         'lit'   => 'application/x-ms-reader',

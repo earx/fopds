@@ -62,11 +62,13 @@ class Author extends Base {
             
         $query ="SELECT SUBSTRING(UPPER(lastname), 1, $level) as title, count(*) as count"
                 ." FROM libavtorname"
-                ." JOIN libavtor ON libavtor.AvtorId = libavtorname.AvtorId"
+                //." JOIN libavtor ON libavtor.AvtorId = libavtorname.AvtorId"
                 .$where
                 ." GROUP BY SUBSTRING(UPPER(lastname), 1, $level)"
                 ." ORDER BY SUBSTRING(UPPER(lastname), 1, $level)"
                 ;
+        
+        //fb($query);
         
         $result = parent::getDb()->query($query);
         $entryArray = array();

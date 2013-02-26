@@ -458,7 +458,6 @@ class Book extends Base {
                 ." GROUP BY libbook.BookId"
             ." ORDER BY libbook.Year"
             ;
-//fb("getBooksByAuthor($authorId, $n)");
 
         return self::getEntryArray ($SQL_BOOKS_BY_AUTHOR, array ($authorId), $n);
     }
@@ -600,9 +599,12 @@ where data.book = libbook.BookId and data.id = ?'
         
         while ($post = $result->fetch_row())
         {
-            //fix flubusta html bug:
+            //fix flubusta html bugs:
             $str = str_replace("<p class=book>", "<p class='f_book'>", $post[0] );
             $str = str_replace("[hr]", "<hr/>", $str);
+            $str = str_replace("<br>", "<br/>", $str);
+            $str = str_replace("class=book", "class='book'", $str);
+            
             $annotations[] = $str;
         }
         

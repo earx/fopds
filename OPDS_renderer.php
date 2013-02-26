@@ -79,7 +79,7 @@ class OPDSRenderer
             self::getXmlStream ()->writeAttribute ("xmlns:xhtml", "http://www.w3.org/1999/xhtml");
             self::getXmlStream ()->writeAttribute ("xmlns:opds", "http://opds-spec.org/2010/catalog");
             self::getXmlStream ()->writeAttribute ("xmlns:opensearch", "http://a9.com/-/spec/opensearch/1.1/");
-            self::getXmlStream ()->writeAttribute ("xmlns:dcterms", "http://purl.org/dc/terms/");
+            self::getXmlStream ()->writeAttribute ("xmlns:dc", "http://purl.org/dc/terms/");
             self::getXmlStream ()->startElement ("title");
                 self::getXmlStream ()->text ($page->title);
             self::getXmlStream ()->endElement ();
@@ -183,6 +183,7 @@ class OPDSRenderer
                 self::getXmlStream ()->writeRaw ($entry->content);
             }
         self::getXmlStream ()->endElement ();
+        
         foreach ($entry->linkArray as $link) {
             self::renderLink ($link);
         }
@@ -207,8 +208,9 @@ class OPDSRenderer
                 self::getXmlStream ()->writeAttribute ("label", $category->name);
             self::getXmlStream ()->endElement ();
         }
+
         if (!is_null ($entry->book->pubdate)) {
-            self::getXmlStream ()->startElement ("dcterms:issued");
+            self::getXmlStream ()->startElement ("dc:issued");
                 self::getXmlStream ()->text (date ("Y-m-d", $entry->book->pubdate));
             self::getXmlStream ()->endElement ();
             self::getXmlStream ()->startElement ("published");
@@ -218,11 +220,15 @@ class OPDSRenderer
         
         $lang = $entry->book->getLanguages ();
         if (!is_null ($lang)) {
-            self::getXmlStream ()->startElement ("dcterms:language");
+            self::getXmlStream ()->startElement ("dc:language");
                 self::getXmlStream ()->text ($lang);
             self::getXmlStream ()->endElement ();
         }
 
+        //now - only FB2 is supported
+        self::getXmlStream ()->startElement ("dc:format");
+            self::getXmlStream ()->text ('fb2+zip');
+        self::getXmlStream ()->endElement ();        
     }
     
     public function render ($page) {

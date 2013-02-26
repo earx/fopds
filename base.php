@@ -98,7 +98,7 @@ class Link
 {
     const OPDS_THUMBNAIL_TYPE = "http://opds-spec.org/image/thumbnail";
     const OPDS_IMAGE_TYPE = "http://opds-spec.org/image";
-    const OPDS_ACQUISITION_TYPE = "http://opds-spec.org/acquisition";
+    const OPDS_ACQUISITION_TYPE = "http://opds-spec.org/acquisition/open-access";
     const OPDS_NAVIGATION_TYPE = "application/atom+xml;profile=opds-catalog;kind=navigation";
     const OPDS_PAGING_TYPE = "application/atom+xml;profile=opds-catalog;kind=acquisition";
     
